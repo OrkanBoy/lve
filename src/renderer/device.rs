@@ -7,17 +7,17 @@ pub struct QueueFamily {
 }
 
 pub struct Device {
-    pub physical_device: vk::PhysicalDevice,
-    pub logical_device: ash::Device,
+    pub physical: vk::PhysicalDevice,
+    pub logical: ash::Device,
     pub graphics_family: QueueFamily
 }
 
 impl Device {
     pub fn new(instance: &ash::Instance, layer_names: &Vec<*const i8>) -> Self {
         let extension_names = vec![khr::Swapchain::name().as_ptr()];
-        let physical_device = Self::pick_physical_device(&instance);
+        let physical = Self::pick_physical(&instance);
 
-        let mut graphics_family = Self::pick_queue_family(&instance, physical_device);
+        let mut graphics_family = Self::pick_queue_family(&instance, physical);
 
         let queue_priorities = [1.0];
 
@@ -33,22 +33,22 @@ impl Device {
             .enabled_extension_names(&extension_names)
             .enabled_layer_names(&layer_names);
 
-        let logical_device = unsafe {
-            instance.create_device(physical_device, &logical_device_info, None).unwrap()
+        let logical = unsafe {
+            instance.create_device(physical, &logical_device_info, None).unwrap()
         };
 
         graphics_family.queues.push(unsafe {
-            logical_device.get_device_queue(graphics_family.index, 0)
+            logical.get_device_queue(graphics_family.index, 0)
         });
 
         Self {
-            physical_device,
-            logical_device,
+            physical,
+            logical,
             graphics_family
         }
     }
 
-    fn pick_physical_device(instance: &ash::Instance) -> vk::PhysicalDevice {
+    fn pick_physical(instance: &ash::Instance) -> vk::PhysicalDevice {
         let pds = unsafe { 
             instance.enumerate_physical_devices().unwrap()
         };
@@ -71,7 +71,8 @@ impl Device {
         };
 
         for (i, qfp) in qfps.iter().enumerate() {
-            if qfp.queue_flags.contains(vk::QueueFlags::GRAPHICS) {
+            if qfp.queue_flags.contains(vk::QueueFlags::GRAPHICS)
+                {
                 return QueueFamily {
                     index: i as u32,
                     flags: qfp.queue_flags,
@@ -84,6 +85,6 @@ impl Device {
     }
 
     pub unsafe fn cleanup(&mut self) {
-        self.logical_device.destroy_device(None);
+        self.logical.destroy_device(None);
     }
 }

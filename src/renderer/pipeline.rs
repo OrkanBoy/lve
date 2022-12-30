@@ -3,9 +3,8 @@ use super::Shader;
 
 use ash::vk;
 
-
 pub struct Pipeline {
-    pub pipeline: vk::Pipeline,
+    pub graphics: vk::Pipeline,
     pub layout: vk::PipelineLayout
 }
 
@@ -15,35 +14,35 @@ impl Pipeline {
         let entry_name = std::ffi::CString::new("main").unwrap();
         
         let vert_shader = Shader::new(
-            &device.logical_device, 
+            &device.logical, 
             vk_shader_macros::include_glsl!("./shaders/foo.vert"),
             vk::ShaderStageFlags::VERTEX, 
             &entry_name);
         
         let frag_shader = Shader::new(
-            &device.logical_device, 
+            &device.logical, 
             vk_shader_macros::include_glsl!("./shaders/foo.frag"),
             vk::ShaderStageFlags::FRAGMENT, 
             &entry_name);
 
-        let (pipeline, layout) = Self::new_pipeline(
-            &device.logical_device,
+        let (graphics, layout) = Self::new_graphics(
+            &device.logical,
             render_pass, 
             extent,
             &[vert_shader.stage_info, frag_shader.stage_info]);
 
         unsafe {
-            vert_shader.cleanup(&device.logical_device);
-            frag_shader.cleanup(&device.logical_device);
+            vert_shader.cleanup(&device.logical);
+            frag_shader.cleanup(&device.logical);
         }
 
         Self {
-            pipeline,
+            graphics,
             layout
         }
     }
 
-    pub fn new_pipeline(
+    pub fn new_graphics(
         logical_device: &ash::Device,
         render_pass: vk::RenderPass,
         extent: vk::Extent2D,
@@ -130,7 +129,7 @@ impl Pipeline {
     }
 
     pub unsafe fn cleanup(&mut self, logical_device: &ash::Device) {
-        logical_device.destroy_pipeline(self.pipeline, None);
+        logical_device.destroy_pipeline(self.graphics, None);
         logical_device.destroy_pipeline_layout(self.layout, None);
     }
 }

@@ -30,12 +30,12 @@ pub struct Renderer {
 impl Renderer {
     pub fn new() -> Self {
         let entry = ash::Entry::linked();
-        let (event_loop, window) = Window::new_window();
+        let (event_loop, window_handle) = Window::new_handle();
 
         let mut extension_names = vec![
             ext::DebugUtils::name().as_ptr(),
             khr::Surface::name().as_ptr()];
-        for window_extension in ash_window::enumerate_required_extensions(&window).unwrap() {
+        for window_extension in ash_window::enumerate_required_extensions(&window_handle).unwrap() {
             extension_names.push(window_extension.as_ptr());
         }
         
@@ -47,7 +47,7 @@ impl Renderer {
 
         let device = Device::new(&instance, &layer_names);
 
-        let window = Window::new(event_loop, window, device.physical_device, &entry, &instance);
+        let window = Window::new(event_loop, window_handle, device.physical, &entry, &instance);
 
         let render_pass = Self::new_render_pass(&device, &window);
 
@@ -135,7 +135,7 @@ impl Renderer {
             .dependencies(&subpass_dependencies);
 
         unsafe {
-            device.logical_device.create_render_pass(&info, None).unwrap()
+            device.logical.create_render_pass(&info, None).unwrap()
         }
     }
 
@@ -145,7 +145,7 @@ impl Renderer {
             .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER);
 
         unsafe {
-            device.logical_device.create_command_pool(&info, None).unwrap()
+            device.logical.create_command_pool(&info, None).unwrap()
         }
     }
 
@@ -161,14 +161,14 @@ impl Renderer {
             .command_buffer_count(swapchain.image_count as u32);
 
         let command_buffers = unsafe {
-            device.logical_device.allocate_command_buffers(&alloc_info).unwrap()
+            device.logical.allocate_command_buffers(&alloc_info).unwrap()
         };
 
         for (i, &command_buffer) in command_buffers.iter().enumerate() {
             let begin_info = vk::CommandBufferBeginInfo::builder();
 
             unsafe {
-                device.logical_device.begin_command_buffer(command_buffer, &begin_info).unwrap();
+                device.logical.begin_command_buffer(command_buffer, &begin_info).unwrap();
             }
 
             let clear_values = [
@@ -189,22 +189,22 @@ impl Renderer {
                 .clear_values(&clear_values);
 
             unsafe {
-                device.logical_device.cmd_begin_render_pass(
+                device.logical.cmd_begin_render_pass(
                     command_buffer,
                     &render_pass_begin_info,
                     vk::SubpassContents::INLINE);
 
-                device.logical_device.cmd_bind_pipeline(
+                device.logical.cmd_bind_pipeline(
                     command_buffer, 
                     vk::PipelineBindPoint::GRAPHICS,
-                    pipeline.pipeline
+                    pipeline.graphics
                 );
 
-                device.logical_device.cmd_draw(command_buffer, 3, 1, 0, 0);
+                device.logical.cmd_draw(command_buffer, 3, 1, 0, 0);
 
-                device.logical_device.cmd_end_render_pass(command_buffer);
+                device.logical.cmd_end_render_pass(command_buffer);
 
-                device.logical_device.end_command_buffer(command_buffer).unwrap();
+                device.logical.end_command_buffer(command_buffer).unwrap();
             }
         }
         command_buffers
@@ -214,16 +214,16 @@ impl Renderer {
 impl Drop for Renderer {
     fn drop(&mut self) {
         unsafe {
-            self.device.logical_device.device_wait_idle().unwrap();
+            self.device.logical.device_wait_idle().unwrap();
 
 
-            self.device.logical_device.destroy_command_pool(self.command_pool, None);
+            self.device.logical.destroy_command_pool(self.command_pool, None);
 
-            self.device.logical_device.destroy_render_pass(self.render_pass, None);
+            self.device.logical.destroy_render_pass(self.render_pass, None);
 
-            self.pipeline.cleanup(&self.device.logical_device);
+            self.pipeline.cleanup(&self.device.logical);
 
-            self.swapchain.cleanup(&self.device.logical_device);
+            self.swapchain.cleanup(&self.device.logical);
 
             self.window.cleanup();
 

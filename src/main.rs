@@ -21,7 +21,7 @@ fn main() {
                 // acquiring next image:
                 renderer.swapchain.current_image = (renderer.swapchain.current_image + 1) % renderer.swapchain.image_count as usize;
 
-                let (image_index, renew_swapchain) = unsafe {
+                let (image_index, renew_pipeline) = unsafe {
                     renderer.swapchain.loader.acquire_next_image(
                         renderer.swapchain.swapchain,
                         u64::MAX,
@@ -35,13 +35,13 @@ fn main() {
                 unsafe {
                     let fences = [renderer.swapchain.start_draw_fences[renderer.swapchain.current_image]];
 
-                    renderer.device.logical_device.wait_for_fences(
+                    renderer.device.logical.wait_for_fences(
                         &fences,
                         true,
                         u64::MAX,
                     ).unwrap();
 
-                    renderer.device.logical_device.reset_fences(
+                    renderer.device.logical.reset_fences(
                         &fences,
                     ).unwrap();
                 };
@@ -62,7 +62,7 @@ fn main() {
                 ];
 
                 unsafe {
-                    renderer.device.logical_device.queue_submit(
+                    renderer.device.logical.queue_submit(
                         graphics_queue,
                         &submit_info,
                         renderer.swapchain.start_draw_fences[renderer.swapchain.current_image],

@@ -3,7 +3,7 @@ use anyhow::Result;
 
 pub struct Window {
     pub event_loop: Option<winit::event_loop::EventLoop<()>>,
-    pub window: winit::window::Window,
+    pub handle: winit::window::Window,
 
     pub surface: vk::SurfaceKHR,
     pub surface_loader: khr::Surface,
@@ -12,19 +12,20 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new_window() -> (winit::event_loop::EventLoop<()>, winit::window::Window) {
+    pub fn new_handle() -> (winit::event_loop::EventLoop<()>, winit::window::Window) {
         let event_loop = winit::event_loop::EventLoop::new();
-        let window = winit::window::Window::new(&event_loop).unwrap();
+        let handle = winit::window::Window::new(&event_loop).unwrap();
 
-        (event_loop, window)
+        (event_loop, handle)
     }
+    
     pub fn new(event_loop: winit::event_loop::EventLoop<()>,
-        window: winit::window::Window,
+        handle: winit::window::Window,
         physical_device: vk::PhysicalDevice,
         entry: &ash::Entry,
         instance: &ash::Instance) -> Self {
         let surface = unsafe {
-            ash_window::create_surface(entry, instance, &window, None).unwrap()
+            ash_window::create_surface(entry, instance, &handle, None).unwrap()
         };
         let surface_loader = khr::Surface::new(entry, instance);
 
@@ -34,7 +35,7 @@ impl Window {
 
         Self {
             event_loop: Some(event_loop),
-            window,
+            handle,
             surface,
             surface_loader,
             format

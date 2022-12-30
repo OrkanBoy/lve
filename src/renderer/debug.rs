@@ -2,13 +2,13 @@ use ash::{vk, extensions::ext};
 use std::ffi;
 
 pub struct Debug {
-    utils: ext::DebugUtils,
+    loader: ext::DebugUtils,
     messenger: vk::DebugUtilsMessengerEXT
 }
 
 impl Debug {
     pub fn new(entry: &ash::Entry, instance: &ash::Instance) -> Self {
-        let utils = ext::DebugUtils::new(entry, instance);
+        let loader = ext::DebugUtils::new(entry, instance);
 
         let messenger_info = vk::DebugUtilsMessengerCreateInfoEXT {
             message_severity: vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
@@ -22,17 +22,17 @@ impl Debug {
         };
 
         let messenger = unsafe {
-            utils.create_debug_utils_messenger(&messenger_info, None).unwrap()
+            loader.create_debug_utils_messenger(&messenger_info, None).unwrap()
         };
 
         Self {
-            utils,
+            loader,
             messenger
         }
     }
 
     pub unsafe fn cleanup(&mut self) {
-        self.utils.destroy_debug_utils_messenger(self.messenger, None);
+        self.loader.destroy_debug_utils_messenger(self.messenger, None);
     }
 }
 
